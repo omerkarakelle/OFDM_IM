@@ -6,13 +6,13 @@ close all
 %% receiver
 
 receive = comm.SDRuReceiver(...
-              'Platform','B200', ...
-              'SerialNum','31FD9C8', ...
+              'Platform','B210', ...
+              'SerialNum','327AB44', ...
               'ChannelMapping',1, ...
-              'Gain', 60, ...
+              'Gain', 40, ...
               'CenterFrequency', 1200e6, ...
               'DecimationFactor', 64, ...
-              'SamplesPerFrame', 1000);
+              'SamplesPerFrame', 15000);
 disp(receive)
 
 rx = [];
@@ -47,6 +47,8 @@ sym_len = FFT_N*N; % symbol len = 128
 L = FFT_N / 2; %length of a half preamble
 frame_len = (PL + 2)*(FFT_N + CP_size);
 xq = [1:1:64];
+pilot_index = [11 20 45 54];
+null_index = [1 2 29:36 63 64]; 
 %% Coarse Time Syncronization
 
 %Schmidl and Cox metric is used for coarse time sycronization
@@ -103,7 +105,7 @@ max_f
 frames = [];
 for i = 161:length(rx) - frame_len
     if c_pad(i) >= th && max(c_pad(i + 30:i + 35)) < th && c_pad(i) >= max(c_pad(i - 3:i + 3))
-        peak = c_pad(i)
+        peak = c_pad(i);
         frame = rx(i - FFT_N + 1:i + frame_len - 2*FFT_N - 2*CP_size);
         frames = [frames; frame];
     end
@@ -119,6 +121,7 @@ for i = 1:height(frames)
     df_2 = angle(sum)/pi;
     frames(i, :) = frames(i, :).*exp(-1i*2.*pi.*df_2.*[1:length(frames(i, :))]/64);
 end
+
 %% Channel Estimation
 H = zeros(height(frames) , FFT_N);
 for i = 1:height(frames)
@@ -130,6 +133,8 @@ for i = 1:height(frames)
     %H(i, :) = smoothdata(H(i, :));
     %H(i, 2:2:end - 2) = (H(i, 1:2:end - 2) + H(i, 3:2:end)) / 2;
     H(i, end) = (H(i, end - 1) + H(i, 1))/2;
+   % H(i, :) = smoothdata(H(i, :));
+
 end
 scatterplot(H(2, :))
 figure
@@ -148,16 +153,17 @@ for i = 1:height(frames)
         sym_time = frame(j * CP_size + (j - 1)* FFT_N + 1: j*FFT_N + j*CP_size);
         sym_freq = fft(sym_time, FFT_N);
         sym_freq = sym_freq.*conj(H(i,:))./abs(H(i,:)).^2; %channel equalization
+        %sym_freq = sym_freq.*exp(1i.*angle(conj(H(i,:)))); %channel equalization
+
         %pilot_equ = (sym_freq(11)*sym_freq(33)*sym_freq(55))^(1/3)/abs(sym_freq(11)*sym_freq(33)*sym_freq(55));
-        pilots = [sym_freq(13) sym_freq(22) sym_freq(43) sym_freq(56)];
-        pilots = interp1([13 22 43 56], pilots, xq, 'linear','extrap');
+        pilots = interp1(pilot_index, sym_freq(pilot_index), xq, 'linear','extrap');
         pilots = smoothdata(pilots);
-        %pilot = sym_freq(13);
-        sym_freq = sym_freq./pilots.*abs(pilots);
+        %pilots = sym_freq(13);
+        sym_freq = sym_freq./pilots;
 
         %pilots = sym_freq([13 22 43 56]);
-        sym_freq([13 22 43 56]) = [];
-        for k = 1:4:60
+        sym_freq([pilot_index null_index]) = [];
+        for k = 1:4:48
             sub_block = sym_freq(k:k+3);
             [sub_data, active_carrier] = demapper(sub_block);
             rx_data = [rx_data sub_data];

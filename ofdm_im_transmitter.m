@@ -4,15 +4,17 @@ clc
 clear
 close all
 %%
-[data, data2] = text2bin('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut porta augue non magna aliquam.')
+[data, data2] = text2bin('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi a sem mi.')
+save('data.mat', 'data')
 %% tx options
 transmit = comm.SDRuTransmitter(...
-              'Platform','B200', ...
-              'SerialNum','31FD9D5', ...
+              'Platform','B210', ...
+              'SerialNum','327AB4A', ...
               'ChannelMapping',1, ...
               'Gain', 50, ...
               'CenterFrequency', 1200e6, ...
               'InterpolationFactor', 64);
+
 disp(transmit)
 %% load data and preamble
 
@@ -22,26 +24,32 @@ load("preamble_cp.mat")
 %% Transmitter
 N = 2; %QPSK
 FFT_N = 64; %FFT length
-sym_len = 90;
+sym_len = 72;
 CP_size = 16; %cycle prefix length
 PL = 8; %payload length
 pilot = 1;
+pilot_index = [11 20 45 54];
+null_index = [1 2 29:36 63 64]; %subcarrier indexes for guard band and DC/near-DC carriers
 %data = randi([0 1], sym_len*PL, 1)'; %random data sequence
 tx = [];
 for i = 1:PL
 
-    sym = [];
+    sym = [0 0];
     for j = 1:6:sym_len
         m = mapper(data((i - 1)*sym_len +j:(i - 1)*sym_len + j + 5));
         sym = [sym m];
-        if ismember(length(sym), [12 21 42 55])
-            sym = [sym pilot];
+        while ismember(length(sym), [(pilot_index - 1) (null_index - 1)])
+            if ismember(length(sym), pilot_index - 1)
+                sym = [sym pilot];
+            elseif ismember(length(sym), null_index - 1)
+                sym = [sym 0];
+            end
         end
     end
     time = ifft(sym, FFT_N);
     tx = [tx time(FFT_N - CP_size + 1:end) time];
 end
-
+%%
 %preamble = 1 - 2*randi([0 1], FFT_N/2, 1)' + 1i - 1i*2*randi([0 1], FFT_N/2, 1)';
 %preamble_time = ifft(preamble, FFT_N/2);
 %preamble_time = [preamble_time preamble_time];
