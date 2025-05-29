@@ -133,7 +133,7 @@ for i = 1:height(frames)
     %H(i, :) = smoothdata(H(i, :));
     %H(i, 2:2:end - 2) = (H(i, 1:2:end - 2) + H(i, 3:2:end)) / 2;
     H(i, end) = (H(i, end - 1) + H(i, 1))/2;
-   % H(i, :) = smoothdata(H(i, :));
+    H(i, :) = smoothdata(H(i, :));
 
 end
 scatterplot(H(2, :))
@@ -186,11 +186,16 @@ scatterplot(active_carriers)
 grid on
 %%
 function [d, p] = demapper(sub_block)
+    lookup = [1 2; 2 3; 3 4; 1 4];
+    powers = abs(sub_block).^2;
+    pair_scores = powers(lookup(:,1)) + powers(lookup(:,2));
+
     d = zeros(1, 6);
-    [p, x] = maxk(sub_block, 2);
-    x = sort(x);
+    [p, x] = max(pair_scores); %maximum likelihood decoding
+    x = lookup(x, :);
     i1 = x(1);
     i2 = x(2);
+    p = sub_block([i1 i2]);
     d(6) = real(sub_block(i2)) < 0;
     d(5) = imag(sub_block(i2)) < 0;
     d(4) = real(sub_block(i1)) < 0;
