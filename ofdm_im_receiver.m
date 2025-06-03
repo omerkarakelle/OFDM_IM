@@ -11,8 +11,8 @@ receive = comm.SDRuReceiver(...
               'ChannelMapping',1, ...
               'Gain', 40, ...
               'CenterFrequency', 1200e6, ...
-              'DecimationFactor', 64, ...
-              'SamplesPerFrame', 15000);
+              'DecimationFactor', 32, ...
+              'SamplesPerFrame', 1000);
 disp(receive)
 
 rx = [];
@@ -95,7 +95,7 @@ c_pad = c(padding:end);
 figure
 plot(c_pad)
 [val_max, max_f] = max(c_pad);
-th = val_max * 0.65; %threshold value for peak detection
+th = val_max * 0.7; %threshold value for peak detection
 if (0.75*c_pad(max_f) <= c_pad(max_f + 32))
     max_f = max_f + 32;
 end
@@ -133,7 +133,7 @@ for i = 1:height(frames)
     %H(i, :) = smoothdata(H(i, :));
     %H(i, 2:2:end - 2) = (H(i, 1:2:end - 2) + H(i, 3:2:end)) / 2;
     H(i, end) = (H(i, end - 1) + H(i, 1))/2;
-    H(i, :) = smoothdata(H(i, :));
+    %H(i, :) = smoothdata(H(i, :));
 
 end
 scatterplot(H(2, :))

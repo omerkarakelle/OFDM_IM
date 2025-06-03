@@ -13,7 +13,7 @@ transmit = comm.SDRuTransmitter(...
               'ChannelMapping',1, ...
               'Gain', 45, ...
               'CenterFrequency', 1200e6, ...
-              'InterpolationFactor', 64);
+              'InterpolationFactor', 32);
 
 disp(transmit)
 %% load data and preamble
@@ -66,10 +66,11 @@ preamble_time_2 = ifft(preamble_2, FFT_N);
 preamble_cp_2 = [preamble_time_2(FFT_N - CP_size + 1:end) preamble_time_2];
 tx = [preamble_cp_2*sqrt(2) tx];
 
+tx = tx / max(abs(tx));  % Normalize
 
 %% transmit
     while (true)
-      transmit(tx');
+      transmit(tx);
     end
     release(transmit);
 
