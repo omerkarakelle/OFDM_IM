@@ -24,7 +24,7 @@ load("preamble_cp.mat")
 %% Transmitter
 N = 2; %QPSK
 FFT_N = 64; %FFT length
-sym_len = 72;
+sym_len = 96;
 CP_size = 16; %cycle prefix length
 PL = 8; %payload length
 pilot = 1;
@@ -36,7 +36,7 @@ for i = 1:PL
 
     sym = [0 0];
     for j = 1:2:sym_len
-        m = mapper(data((i - 1)*sym_len +j:(i - 1)*sym_len + j + 2));
+        m = mapper(data((i - 1)*sym_len +j:(i - 1)*sym_len + j + 1));
         sym = [sym m];
         while ismember(length(sym), [(pilot_index - 1) (null_index - 1)])
             if ismember(length(sym), pilot_index - 1)
@@ -76,10 +76,9 @@ tx = tx / max(abs(tx));  % Normalize
 
 %% OFDM Mapper
 function m = mapper(sub_data)
-    sig = 1 - 2*sub_data(3:6);
+    sig = 1 - 2*sub_data;
     s1 = sig(2) + 1i*sig(1);
-    s2 = sig(4) + 1i*sig(3);
-    m = [s1 s2];
+    m = [s1/sqrt(2)];
 end
 %%
 function [binV, binS] = text2bin(text)

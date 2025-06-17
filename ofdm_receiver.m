@@ -30,7 +30,7 @@ end
 release(receive);
 %% plot signal
 rx = double(rx);
-rx = rx'./max(rx);
+rx = rx./max(rx);
 plot(abs(rx))
 %% load data and preamble
 
@@ -76,7 +76,8 @@ a_pick = conv(rectpulse, M);
 figure
 plot(a_pick)
 
-[val_max_cf, max_cf] = max(a_pick); %maximum value of Schmidl and Cox metric
+[val_max_cf, max_cf] = max(a_pick(81:end)); %maximum value of Schmidl and Cox metric
+max_cf = max_cf + 80;
 if (a_pick(max_cf - 80) >= 0.5*a_pick(max_cf))
     max_cf = max_cf - 80;
 end
